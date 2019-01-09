@@ -44,27 +44,29 @@ RUN apk update              \
     php7.3-pdo_mysql        \
     php7.3-tokenizer        \
     php7.3-dom              \
-    # php7.3-redis          \
+    php7.3-redis            \
     php7.3-xml              \
     php7.3-simplexml        \
     php7.3-json             \
     php7.3-sodium           \
     php7.3-opcache          \
     php7.3-shmop            \
-    php7.3-fileinfo            \
+    php7.3-fileinfo         \
     php7.3-xmlwriter        \
+    php7.3-gmp              \
+    php7.3-bcmath           \
     php7.3-session          \
     php7.3-common
 
-RUN wget https://github.com/phpredis/phpredis/archive/4.1.1.tar.gz \
-    && tar xfz 4.1.1.tar.gz     \
-    && rm -r 4.1.1.tar.gz       \
-    && cd phpredis-4.1.1        \
-    && phpize                   \
-    && ./configure              \
-    && make                     \
-    && make install             \
-    && rm -Rf /phpredis-4.1.1 
+#RUN wget https://github.com/phpredis/phpredis/archive/4.1.1.tar.gz \
+#    && tar xfz 4.1.1.tar.gz     \
+#    && rm -r 4.1.1.tar.gz       \
+#    && cd phpredis-4.1.1        \
+#    && phpize                   \
+#    && ./configure              \
+#    && make                     \
+#    && make install             \
+#    && rm -Rf /phpredis-4.1.1 
 
 # PHP-FPM
 RUN echo 'memory_limit=1024M' > /etc/php/7.3/conf.d/memory_limit.ini    \
