@@ -10,10 +10,8 @@ RUN apk  add  --no-cache --update --virtual  \
     buildDeps \
     gcc \
     autoconf \
-    build-base 
- 
-
-RUN apk update              \
+    build-base  \
+ && apk update              \
     && apk upgrade          \
     && apk add --no-cache   \
     # Base
@@ -35,31 +33,24 @@ RUN apk update              \
     nano                    \
     zlib-dev                \
     procps                  \
-    gnupg                   
-
-RUN docker-php-ext-install intl
-RUN docker-php-ext-install gmp 
-RUN docker-php-ext-install shmop 
-RUN docker-php-ext-install opcache
-RUN docker-php-ext-install bcmath 
-RUN docker-php-ext-install pdo_mysql 
-RUN docker-php-ext-install pcntl  
-RUN docker-php-ext-install soap
-RUN docker-php-ext-configure zip --with-libzip 
-RUN docker-php-ext-install zip  
-RUN docker-php-ext-enable zip  
-RUN pecl install redis-4.2.0 
-RUN apk del buildDeps
-
-RUN cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini 
-
-# PHP-FPM
-RUN echo 'memory_limit=1024M' > /usr/local/etc/php/conf.d/memory_limit.ini    \
-# PHP CLI
-    && echo 'realpath_cache_size=2048M' > /usr/local/etc/php/conf.d/pathcache.ini         \
-    && echo 'realpath_cache_ttl=7200' >> /usr/local/etc/php/conf.d/pathcache.ini          \
-    && echo '[opcache]' > /usr/local/etc/php/conf.d/opcache.ini                           \
-    && echo 'opcache.memory_consumption = 512M' >> /usr/local/etc/php/conf.d/opcache.ini  \
-    && echo 'opcache.max_accelerated_files = 1000000' >> /usr/local/etc/php/conf.d/opcache.ini  \
-# Others
-    && update-ca-certificates
+    gnupg              \
+&& pecl install redis-4.3.0    \                                                    
+&& docker-php-ext-configure zip --with-libzip \
+&& docker-php-ext-install intl gmp shmop opcache bcmath pdo_mysql pcntl soap zip\
+&& docker-php-source delete \
+&& apk del --no-cache build-base buildDeps \
+&& cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini  \
+&& echo 'memory_limit=1024M' > /usr/local/etc/php/conf.d/memory_limit.ini    \
+&& echo 'realpath_cache_size=2048M' > /usr/local/etc/php/conf.d/pathcache.ini         \
+&& echo 'realpath_cache_ttl=7200' >> /usr/local/etc/php/conf.d/pathcache.ini          \
+&& echo '[opcache]' > /usr/local/etc/php/conf.d/opcache.ini                           \
+&& echo 'opcache.memory_consumption = 512M' >> /usr/local/etc/php/conf.d/opcache.ini  \
+&& echo 'opcache.max_accelerated_files = 1000000' >> /usr/local/etc/php/conf.d/opcache.ini  \
+&& echo 'extension=redis' > /usr/local/etc/php/conf.d/redis.ini \
+&& echo "default_socket_timeout=1200" >> /usr/local/etc/php/php.ini \
+&& update-ca-certificates \
+&& rm -Rf /tmp/pear             \
+&& rm -rf /var/cache/apk/*                                                          \
+&& rm -rf /var/cache/fontcache/*                                                    \
+&& rm -rf /usr/src/php.tar.xz                                                       \
+&& rm -Rf /usr/local/bin/phpdbg 
