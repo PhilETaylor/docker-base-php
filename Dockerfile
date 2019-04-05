@@ -1,7 +1,7 @@
 # docker build . --tag registry.myjoomla.com/base-php
 # docker push registry.myjoomla.com/base-php
 
-FROM php:7.3.3-cli-alpine3.9
+FROM php:7.3.4-cli-alpine3.9
 
 MAINTAINER Phil Taylor <phil@phil-taylor.com>
 
