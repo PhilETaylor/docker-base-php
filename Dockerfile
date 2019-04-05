@@ -257,30 +257,22 @@ RUN apk  add  --no-cache --update --virtual  \
     procps                  \
     gnupg              \
 && pecl install redis-4.3.0    \                                                    
-&& docker-php-ext-install intl\
-&& docker-php-ext-install gmp \
-&& docker-php-ext-install shmop \
-&& docker-php-ext-install opcache\
-&& docker-php-ext-install bcmath \
-&& docker-php-ext-install pdo_mysql \
-&& docker-php-ext-install pcntl  \
-&& docker-php-ext-install soap\
 && docker-php-ext-configure zip --with-libzip \
-&& docker-php-ext-install zip  \
-&& docker-php-ext-enable zip  \
-&& apk del buildDeps \
-
+&& docker-php-ext-install intl gmp shmop opcache bcmath pdo_mysql pcntl soap zip\
+&& docker-php-source delete \
+&& apk del --no-cache build-base buildDeps \
 && cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini  \
-
-# PHP-FPM
 && echo 'memory_limit=1024M' > /usr/local/etc/php/conf.d/memory_limit.ini    \
-# PHP CLI
-    && echo 'realpath_cache_size=2048M' > /usr/local/etc/php/conf.d/pathcache.ini         \
-    && echo 'realpath_cache_ttl=7200' >> /usr/local/etc/php/conf.d/pathcache.ini          \
-    && echo '[opcache]' > /usr/local/etc/php/conf.d/opcache.ini                           \
-    && echo 'opcache.memory_consumption = 512M' >> /usr/local/etc/php/conf.d/opcache.ini  \
-    && echo 'opcache.max_accelerated_files = 1000000' >> /usr/local/etc/php/conf.d/opcache.ini  \
-    && echo 'extension=redis' > /usr/local/etc/php/conf.d/redis.ini \
-    && echo "default_socket_timeout=1200" >> /usr/local/etc/php/php.ini \
-# Others
-    && update-ca-certificates
+&& echo 'realpath_cache_size=2048M' > /usr/local/etc/php/conf.d/pathcache.ini         \
+&& echo 'realpath_cache_ttl=7200' >> /usr/local/etc/php/conf.d/pathcache.ini          \
+&& echo '[opcache]' > /usr/local/etc/php/conf.d/opcache.ini                           \
+&& echo 'opcache.memory_consumption = 512M' >> /usr/local/etc/php/conf.d/opcache.ini  \
+&& echo 'opcache.max_accelerated_files = 1000000' >> /usr/local/etc/php/conf.d/opcache.ini  \
+&& echo 'extension=redis' > /usr/local/etc/php/conf.d/redis.ini \
+&& echo "default_socket_timeout=1200" >> /usr/local/etc/php/php.ini \
+&& update-ca-certificates \
+&& rm -Rf /tmp/pear             \
+&& rm -rf /var/cache/apk/*                                                          \
+&& rm -rf /var/cache/fontcache/*                                                    \
+&& rm -rf /usr/src/php.tar.xz                                                       \
+&& rm -Rf /usr/local/bin/phpdbg 
