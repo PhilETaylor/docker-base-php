@@ -16,7 +16,6 @@ RUN apk  add  --no-cache --update --virtual  \
 RUN apk update              \
     && apk upgrade          \
     && apk add --no-cache   \
-    # Base
     supervisor              \
     sudo                    \
     composer                \
@@ -28,11 +27,11 @@ RUN apk update              \
     htop                    \
     postfix                 \
     httpie                  \
-    gmp-dev\
-    libxml2-dev\
-    icu-dev \
-    libzip-dev   \
-    icu \
+    gmp-dev                 \
+    libxml2-dev             \
+    icu-dev                 \
+    libzip-dev              \
+    icu                     \
     nano                    \
     zlib-dev                \
     procps                  \
