@@ -1,7 +1,13 @@
 # docker build . --tag registry.myjoomla.com/base-php
 # docker push registry.myjoomla.com/base-php
 
-FROM alpine:latest
+#
+# NOTE: THIS DOCKERFILE IS GENERATED VIA "update.sh"
+#
+# PLEASE DO NOT EDIT IT DIRECTLY.
+#
+
+FROM alpine:3.11
 
 # dependencies required for running "phpize"
 # these get automatically installed and removed by "docker-php-ext-*" (unless they're already installed)
@@ -17,7 +23,7 @@ ENV PHPIZE_DEPS \
         re2c
 
 # persistent / runtime deps
-RUN apk add --no-cache --virtual .persistent-deps \
+RUN apk add --no-cache \
         ca-certificates \
         curl \
         tar \
@@ -26,9 +32,9 @@ RUN apk add --no-cache --virtual .persistent-deps \
         openssl
 
 # ensure www-data user exists
-RUN set -x \
-    && addgroup -g 82 -S www-data \
-    && adduser -u 82 -D -S -G www-data www-data
+RUN set -eux; \
+    addgroup -g 82 -S www-data; \
+    adduser -u 82 -D -S -G www-data www-data
 # 82 is the standard uid/gid for "www-data" in Alpine
 # https://git.alpinelinux.org/aports/tree/main/apache2/apache2.pre-install?h=3.9-stable
 # https://git.alpinelinux.org/aports/tree/main/lighttpd/lighttpd.pre-install?h=3.9-stable
@@ -53,27 +59,25 @@ ENV PHP_EXTRA_CONFIGURE_ARGS --enable-fpm --with-fpm-user=www-data --with-fpm-gr
 # Enable linker optimization (this sorts the hash buckets to improve cache locality, and is non-default)
 # Adds GNU HASH segments to generated executables (this is used if present, and is much faster than sysv hash; in this configuration, sysv hash is also generated)
 # https://github.com/docker-library/php/issues/272
-ENV PHP_CFLAGS="-fstack-protector-strong -fpic -fpie -O2"
+# -D_LARGEFILE_SOURCE and -D_FILE_OFFSET_BITS=64 (https://www.php.net/manual/en/intro.filesystem.php)
+ENV PHP_CFLAGS="-fstack-protector-strong -fpic -fpie -O2 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 ENV PHP_CPPFLAGS="$PHP_CFLAGS"
 ENV PHP_LDFLAGS="-Wl,-O1 -Wl,--hash-style=both -pie"
 
-ENV GPG_KEYS CBAF69F173A0FEA4B537F470D66C9593118BCCB6 F38252826ACD957EF380D39F2F7956BC5DA04B5D
+ENV GPG_KEYS 42670A7FE4D0441C8E4632349E4FDC074A4EF02D 5A52880781F755608BF815FC910DEB46F53EA312
 
-ENV PHP_VERSION 7.3.11
-ENV PHP_URL="https://secure.php.net/get/php-7.3.11.tar.xz/from/this/mirror" PHP_ASC_URL="https://secure.php.net/get/php-7.3.11.tar.xz.asc/from/this/mirror"
+ENV PHP_VERSION 7.4.3
+ENV PHP_URL="https://www.php.net/get/php-7.4.3.tar.xz/from/this/mirror" PHP_ASC_URL=""
 ENV PHP_SHA256="" PHP_MD5=""
 
-RUN set -xe; \
+RUN set -eux; \
     \
-    apk add --no-cache --virtual .fetch-deps \
-        gnupg \
-        wget \
-    ; \
+    apk add --no-cache --virtual .fetch-deps gnupg; \
     \
     mkdir -p /usr/src; \
     cd /usr/src; \
     \
-    wget -O php.tar.xz "$PHP_URL"; \
+    curl -fsSL -o php.tar.xz "$PHP_URL"; \
     \
     if [ -n "$PHP_SHA256" ]; then \
         echo "$PHP_SHA256 *php.tar.xz" | sha256sum -c -; \
@@ -83,22 +87,22 @@ RUN set -xe; \
     fi; \
     \
     if [ -n "$PHP_ASC_URL" ]; then \
-        wget -O php.tar.xz.asc "$PHP_ASC_URL"; \
+        curl -fsSL -o php.tar.xz.asc "$PHP_ASC_URL"; \
         export GNUPGHOME="$(mktemp -d)"; \
         for key in $GPG_KEYS; do \
             gpg --batch --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
         done; \
         gpg --batch --verify php.tar.xz.asc php.tar.xz; \
-        command -v gpgconf > /dev/null && gpgconf --kill all; \
+        gpgconf --kill all; \
         rm -rf "$GNUPGHOME"; \
     fi; \
     \
-    apk del .fetch-deps
+    apk del --no-network .fetch-deps
 
-COPY ./docker-php-source /usr/local/bin/
+COPY docker-php-source /usr/local/bin/
 
-RUN set -xe \
-    && apk add --no-cache --virtual .build-deps \
+RUN set -eux; \
+    apk add --no-cache --virtual .build-deps \
         $PHPIZE_DEPS \
         argon2-dev \
         coreutils \
@@ -106,16 +110,20 @@ RUN set -xe \
         libedit-dev \
         libsodium-dev \
         libxml2-dev \
+        linux-headers \
+        oniguruma-dev \
         openssl-dev \
         sqlite-dev \
+    ; \
     \
-    && export CFLAGS="$PHP_CFLAGS" \
+    export CFLAGS="$PHP_CFLAGS" \
         CPPFLAGS="$PHP_CPPFLAGS" \
         LDFLAGS="$PHP_LDFLAGS" \
-    && docker-php-source extract \
-    && cd /usr/src/php \
-    && gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" \
-    && ./configure \
+    ; \
+    docker-php-source extract; \
+    cd /usr/src/php; \
+    gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
+    ./configure \
         --build="$gnuArch" \
         --with-config-file-path="$PHP_INI_DIR" \
         --with-config-file-scan-dir="$PHP_INI_DIR/conf.d" \
@@ -136,42 +144,51 @@ RUN set -xe \
         --with-password-argon2 \
 # https://wiki.php.net/rfc/libsodium
         --with-sodium=shared \
+# always build against system sqlite3 (https://github.com/php/php-src/commit/6083a387a81dbbd66d6316a3a12a63f06d5f7109)
+        --with-pdo-sqlite=/usr \
+        --with-sqlite3=/usr \
         \
         --with-curl \
         --with-libedit \
         --with-openssl \
         --with-zlib \
         \
+# in PHP 7.4+, the pecl/pear installers are officially deprecated (requiring an explicit "--with-pear") and will be removed in PHP 8+; see also https://github.com/docker-library/php/issues/846#issuecomment-505638494
+        --with-pear \
+        \
 # bundled pcre does not support JIT on s390x
 # https://manpages.debian.org/stretch/libpcre3-dev/pcrejit.3.en.html#AVAILABILITY_OF_JIT_SUPPORT
-        $(test "$gnuArch" = 's390x-linux-gnu' && echo '--without-pcre-jit') \
+        $(test "$gnuArch" = 's390x-linux-musl' && echo '--without-pcre-jit') \
         \
-        $PHP_EXTRA_CONFIGURE_ARGS \
-    && make -j "$(nproc)" \
-    && find -type f -name '*.a' -delete \
-    && make install \
-    && { find /usr/local/bin /usr/local/sbin -type f -perm +0111 -exec strip --strip-all '{}' + || true; } \
-    && make clean \
+        ${PHP_EXTRA_CONFIGURE_ARGS:-} \
+    ; \
+    make -j "$(nproc)"; \
+    find -type f -name '*.a' -delete; \
+    make install; \
+    find /usr/local/bin /usr/local/sbin -type f -perm +0111 -exec strip --strip-all '{}' + || true; \
+    make clean; \
     \
 # https://github.com/docker-library/php/issues/692 (copy default example "php.ini" files somewhere easily discoverable)
-    && cp -v php.ini-* "$PHP_INI_DIR/" \
+    cp -v php.ini-* "$PHP_INI_DIR/"; \
     \
-    && cd / \
-    && docker-php-source delete \
+    cd /; \
+    docker-php-source delete; \
     \
-    && runDeps="$( \
+    runDeps="$( \
         scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
             | tr ',' '\n' \
             | sort -u \
             | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-    )" \
-    && apk add --no-cache --virtual .php-rundeps $runDeps \
+    )"; \
+    apk add --no-cache $runDeps; \
     \
-    && apk del .build-deps \
+    apk del --no-network .build-deps; \
     \
-# https://github.com/docker-library/php/issues/443
-    && pecl update-channels \
-    && rm -rf /tmp/pear ~/.pearrc
+# update pecl channel definitions https://github.com/docker-library/php/issues/443
+    pecl update-channels; \
+    rm -rf /tmp/pear ~/.pearrc; \
+# smoke test
+    php --version
 
 COPY docker-php-ext-* docker-php-entrypoint /usr/local/bin/
 
@@ -182,9 +199,9 @@ ENTRYPOINT ["docker-php-entrypoint"]
 ##<autogenerated>##
 WORKDIR /var/www/html
 
-RUN set -ex \
-    && cd /usr/local/etc \
-    && if [ -d php-fpm.d ]; then \
+RUN set -eux; \
+    cd /usr/local/etc; \
+    if [ -d php-fpm.d ]; then \
         # for some reason, upstream's php-fpm.conf.default has "include=NONE/etc/php-fpm.d/*.conf"
         sed 's!=NONE/!=!g' php-fpm.conf.default | tee php-fpm.conf > /dev/null; \
         cp php-fpm.d/www.conf.default php-fpm.d/www.conf; \
@@ -196,8 +213,8 @@ RUN set -ex \
             echo '[global]'; \
             echo 'include=etc/php-fpm.d/*.conf'; \
         } | tee php-fpm.conf; \
-    fi \
-    && { \
+    fi; \
+    { \
         echo '[global]'; \
         echo 'error_log = /proc/self/fd/2'; \
         echo; echo '; https://github.com/docker-library/php/pull/725#issuecomment-443540114'; echo 'log_limit = 8192'; \
@@ -211,8 +228,8 @@ RUN set -ex \
         echo '; Ensure worker stdout and stderr are sent to the main error log.'; \
         echo 'catch_workers_output = yes'; \
         echo 'decorate_workers_output = no'; \
-    } | tee php-fpm.d/docker.conf \
-    && { \
+    } | tee php-fpm.d/docker.conf; \
+    { \
         echo '[global]'; \
         echo 'daemonize = no'; \
         echo; \
@@ -220,8 +237,13 @@ RUN set -ex \
         echo 'listen = 9000'; \
     } | tee php-fpm.d/zz-docker.conf
 
+# Override stop signal to stop process gracefully
+# https://github.com/php/php-src/blob/17baa87faddc2550def3ae7314236826bc1b1398/sapi/fpm/php-fpm.8.in#L163
+STOPSIGNAL SIGQUIT
+
 EXPOSE 9000
 CMD ["php-fpm"]
+##</autogenerated>##
 
 
 
