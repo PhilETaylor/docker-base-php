@@ -9,8 +9,8 @@
 
 FROM alpine:latest
 
-ENV PHP_VERSION 7.4.4
-ENV PHP_URL="https://www.php.net/get/php-7.4.4.tar.xz/from/this/mirror" PHP_ASC_URL=""
+ENV PHP_VERSION 7.4.5
+ENV PHP_URL="https://www.php.net/get/php-7.4.5.tar.xz/from/this/mirror" PHP_ASC_URL=""
 ENV PHP_SHA256="" PHP_MD5=""
 
 
