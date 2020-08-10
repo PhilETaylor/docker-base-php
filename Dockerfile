@@ -1,7 +1,7 @@
 # docker build . --tag registry.myjoomla.com/base-php
 # docker push registry.myjoomla.com/base-php
 
-FROM php:7.3.9-cli-alpine3.10
+FROM php:7.4.9-cli-alpine3.12
 
 MAINTAINER Phil Taylor <phil@phil-taylor.com>
 
@@ -10,8 +10,8 @@ RUN apk  add  --no-cache --update --virtual  \
     buildDeps \
     gcc \
     autoconf \
-    build-base 
- 
+    build-base
+
 
 RUN apk update              \
     && apk upgrade          \
@@ -35,23 +35,23 @@ RUN apk update              \
     nano                    \
     zlib-dev                \
     procps                  \
-    gnupg                   
+    gnupg
 
 RUN docker-php-ext-install intl
-RUN docker-php-ext-install gmp 
-RUN docker-php-ext-install shmop 
+RUN docker-php-ext-install gmp
+RUN docker-php-ext-install shmop
 RUN docker-php-ext-install opcache
-RUN docker-php-ext-install bcmath 
-RUN docker-php-ext-install pdo_mysql 
-RUN docker-php-ext-install pcntl  
+RUN docker-php-ext-install bcmath
+RUN docker-php-ext-install pdo_mysql
+RUN docker-php-ext-install pcntl
 RUN docker-php-ext-install soap
-RUN docker-php-ext-configure zip --with-libzip 
-RUN docker-php-ext-install zip  
-RUN docker-php-ext-enable zip  
-RUN pecl install redis-4.2.0 
+RUN docker-php-ext-configure zip --with-libzip
+RUN docker-php-ext-install zip
+RUN docker-php-ext-enable zip
+RUN pecl install redis
 RUN apk del buildDeps
 
-RUN cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini 
+RUN cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini
 
 # PHP-FPM
 RUN echo 'memory_limit=1024M' > /usr/local/etc/php/conf.d/memory_limit.ini    \
