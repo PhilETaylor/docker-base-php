@@ -9,8 +9,8 @@
 
 FROM alpine:latest
 
-ENV PHP_VERSION 7.4.5
-ENV PHP_URL="https://www.php.net/get/php-7.4.5.tar.xz/from/this/mirror" PHP_ASC_URL=""
+ENV PHP_VERSION 7.4.10
+ENV PHP_URL="https://www.php.net/get/php-7.4.10.tar.xz/from/this/mirror" PHP_ASC_URL=""
 ENV PHP_SHA256="" PHP_MD5=""
 
 
@@ -282,7 +282,8 @@ RUN apk  add  --no-cache --update --virtual  \
     zlib-dev                \
     procps                  \
     gnupg                   \
-&& pecl install redis-4.3.0 \                                                    
+  && wget https://pecl.php.net/get/redis-5.3.1.tgz && pecl install redis-5.3.1.tgz                                                    \
+    && docker-php-ext-enable redis \                         
 && docker-php-ext-configure zip --with-libzip \
 && docker-php-ext-install intl gmp shmop opcache bcmath pdo_mysql pcntl soap zip mbstring \
 && docker-php-source delete \
