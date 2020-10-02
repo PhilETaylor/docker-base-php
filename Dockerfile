@@ -1,7 +1,7 @@
 # docker build . --tag registry.myjoomla.com/base-php
 # docker push registry.myjoomla.com/base-php
 
-FROM php:7.4.9-cli-alpine3.12
+FROM php:7.4.10-cli-alpine3.12
 
 MAINTAINER Phil Taylor <phil@phil-taylor.com>
 
@@ -45,7 +45,7 @@ RUN docker-php-ext-install bcmath
 RUN docker-php-ext-install pdo_mysql
 RUN docker-php-ext-install pcntl
 RUN docker-php-ext-install soap
-RUN docker-php-ext-configure zip --with-libzip
+RUN docker-php-ext-configure zip
 RUN docker-php-ext-install zip
 RUN docker-php-ext-enable zip
 RUN pecl install redis
