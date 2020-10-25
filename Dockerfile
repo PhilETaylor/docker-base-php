@@ -52,7 +52,7 @@ RUN docker-php-ext-install soap
 RUN docker-php-ext-configure zip
 RUN docker-php-ext-install zip
 RUN docker-php-ext-enable zip
-RUN pecl install redis
+RUN wget -4 https://pecl.php.net/get/redis-5.3.1.tgz && pecl install redis-5.3.1.tgz
 RUN apk del buildDeps
 
 RUN cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini
