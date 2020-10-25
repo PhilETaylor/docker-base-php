@@ -218,9 +218,10 @@ CMD ["php", "-a"]
 
 
 MAINTAINER Phil Taylor <phil@phil-taylor.com>
-RUN  echo "postfix postfix/mailname string worker.mysites.guru" | debconf-set-selections
-RUN  echo "postfix postfix/main_mailer_type string 'Internet Site'" |  debconf-set-selections
-RUN apt update && apt-get install --assume-yes postfix
+
+RUN echo "postfix postfix/main_mailer_type string Internet Site" |  debconf-set-selections
+RUN echo "postfix postfix/mailname string worker.mysites.guru" | debconf-set-selections
+RUN apt update && apt install --assume-yes mailutils postfix
 
 RUN apt upgrade -y          \
     &&  DEBIAN_FRONTEND=noninteractive apt install -y   \
