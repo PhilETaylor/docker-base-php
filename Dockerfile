@@ -1,9 +1,13 @@
 # docker build . --tag registry.myjoomla.com/base-php
 # docker push registry.myjoomla.com/base-php
 
-FROM php:7.4.10-cli-alpine3.12
+FROM php:7.4.11-cli-alpine3.12
 
 MAINTAINER Phil Taylor <phil@phil-taylor.com>
+
+RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >/etc/apk/repositories
+RUN echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >>/etc/apk/repositories
+
 
 RUN apk  add  --no-cache --update --virtual  \
     # Base
