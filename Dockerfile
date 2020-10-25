@@ -7,43 +7,44 @@
 # PLEASE DO NOT EDIT IT DIRECTLY.
 #
 
-FROM scratch
-ADD alpine-minirootfs-3.12.1-x86_64.tar.gz /
+FROM debian:buster-slim
 
 ENV PHP_VERSION 7.4.11
 ENV PHP_URL="https://www.php.net/distributions/php-7.4.11.tar.xz" PHP_ASC_URL="https://www.php.net/distributions/php-7.4.11.tar.xz.asc"
 ENV PHP_SHA256="5d31675a9b9c21b5bd03389418218c30b26558246870caba8eb54f5856e2d6ce" PHP_MD5=""
 
+# prevent Debian's PHP packages from being installed
+# https://github.com/docker-library/php/pull/542
+RUN set -eux; \
+	{ \
+		echo 'Package: php*'; \
+		echo 'Pin: release *'; \
+		echo 'Pin-Priority: -1'; \
+	} > /etc/apt/preferences.d/no-debian-php
+
 # dependencies required for running "phpize"
-# these get automatically installed and removed by "docker-php-ext-*" (unless they're already installed)
+# (see persistent deps below)
 ENV PHPIZE_DEPS \
 		autoconf \
-		dpkg-dev dpkg \
+		dpkg-dev \
 		file \
 		g++ \
 		gcc \
 		libc-dev \
 		make \
-		pkgconf \
+		pkg-config \
 		re2c
 
 # persistent / runtime deps
-RUN apk add --no-cache \
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		$PHPIZE_DEPS \
 		ca-certificates \
 		curl \
-		tar \
-		xz \
-# https://github.com/docker-library/php/issues/494
-		openssl
-
-# ensure www-data user exists
-RUN set -eux; \
-	addgroup -g 82 -S www-data; \
-	adduser -u 82 -D -S -G www-data www-data
-# 82 is the standard uid/gid for "www-data" in Alpine
-# https://git.alpinelinux.org/aports/tree/main/apache2/apache2.pre-install?h=3.9-stable
-# https://git.alpinelinux.org/aports/tree/main/lighttpd/lighttpd.pre-install?h=3.9-stable
-# https://git.alpinelinux.org/aports/tree/main/nginx/nginx.pre-install?h=3.9-stable
+		xz-utils \
+	; \
+	rm -rf /var/lib/apt/lists/*
 
 ENV PHP_INI_DIR /usr/local/etc/php
 RUN set -eux; \
@@ -68,7 +69,10 @@ ENV GPG_KEYS 42670A7FE4D0441C8E4632349E4FDC074A4EF02D 5A52880781F755608BF815FC91
 
 RUN set -eux; \
 	\
-	apk add --no-cache --virtual .fetch-deps gnupg; \
+	savedAptMark="$(apt-mark showmanual)"; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends gnupg dirmngr; \
+	rm -rf /var/lib/apt/lists/*; \
 	\
 	mkdir -p /usr/src; \
 	cd /usr/src; \
@@ -93,32 +97,43 @@ RUN set -eux; \
 		rm -rf "$GNUPGHOME"; \
 	fi; \
 	\
-	apk del --no-network .fetch-deps
+	apt-mark auto '.*' > /dev/null; \
+	apt-mark manual $savedAptMark > /dev/null; \
+	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
 
 COPY docker-php-source /usr/local/bin/
 
 RUN set -eux; \
-	apk add --no-cache --virtual .build-deps \
-		$PHPIZE_DEPS \
-		argon2-dev \
-		coreutils \
-		curl-dev \
-		libedit-dev \
-		libsodium-dev \
-		libxml2-dev \
-		linux-headers \
-		oniguruma-dev \
-		openssl-dev \
-		sqlite-dev \
-	; \
 	\
-	export CFLAGS="$PHP_CFLAGS" \
+	savedAptMark="$(apt-mark showmanual)"; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		libargon2-dev \
+		libcurl4-openssl-dev \
+		libedit-dev \
+		libonig-dev \
+		libsodium-dev \
+		libsqlite3-dev \
+		libssl-dev \
+		libxml2-dev \
+		zlib1g-dev \
+		${PHP_EXTRA_BUILD_DEPS:-} \
+	; \
+	rm -rf /var/lib/apt/lists/*; \
+	\
+	export \
+		CFLAGS="$PHP_CFLAGS" \
 		CPPFLAGS="$PHP_CPPFLAGS" \
 		LDFLAGS="$PHP_LDFLAGS" \
 	; \
 	docker-php-source extract; \
 	cd /usr/src/php; \
 	gnuArch="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)"; \
+	debMultiarch="$(dpkg-architecture --query DEB_BUILD_MULTIARCH)"; \
+# https://bugs.php.net/bug.php?id=74125
+	if [ ! -d /usr/include/curl ]; then \
+		ln -sT "/usr/include/$debMultiarch/curl" /usr/local/include/curl; \
+	fi; \
 	./configure \
 		--build="$gnuArch" \
 		--with-config-file-path="$PHP_INI_DIR" \
@@ -155,14 +170,15 @@ RUN set -eux; \
 		\
 # bundled pcre does not support JIT on s390x
 # https://manpages.debian.org/stretch/libpcre3-dev/pcrejit.3.en.html#AVAILABILITY_OF_JIT_SUPPORT
-		$(test "$gnuArch" = 's390x-linux-musl' && echo '--without-pcre-jit') \
+		$(test "$gnuArch" = 's390x-linux-gnu' && echo '--without-pcre-jit') \
+		--with-libdir="lib/$debMultiarch" \
 		\
 		${PHP_EXTRA_CONFIGURE_ARGS:-} \
 	; \
 	make -j "$(nproc)"; \
 	find -type f -name '*.a' -delete; \
 	make install; \
-	find /usr/local/bin /usr/local/sbin -type f -perm +0111 -exec strip --strip-all '{}' + || true; \
+	find /usr/local/bin /usr/local/sbin -type f -executable -exec strip --strip-all '{}' + || true; \
 	make clean; \
 	\
 # https://github.com/docker-library/php/issues/692 (copy default example "php.ini" files somewhere easily discoverable)
@@ -171,15 +187,18 @@ RUN set -eux; \
 	cd /; \
 	docker-php-source delete; \
 	\
-	runDeps="$( \
-		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
-			| tr ',' '\n' \
-			| sort -u \
-			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-	)"; \
-	apk add --no-cache $runDeps; \
-	\
-	apk del --no-network .build-deps; \
+# reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
+	apt-mark auto '.*' > /dev/null; \
+	[ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; \
+	find /usr/local -type f -executable -exec ldd '{}' ';' \
+		| awk '/=>/ { print $(NF-1) }' \
+		| sort -u \
+		| xargs -r dpkg-query --search \
+		| cut -d: -f1 \
+		| sort -u \
+		| xargs -r apt-mark manual \
+	; \
+	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
 	\
 # update pecl channel definitions https://github.com/docker-library/php/issues/443
 	pecl update-channels; \
@@ -194,47 +213,42 @@ COPY docker-php-ext-* docker-php-entrypoint /usr/local/bin/
 RUN docker-php-ext-enable sodium
 
 ENTRYPOINT ["docker-php-entrypoint"]
-##</autogenerated>##
+CMD ["php", "-a"]
 
 
 
 MAINTAINER Phil Taylor <phil@phil-taylor.com>
 
-RUN apk  add  --no-cache --update --virtual  \
+RUN apt update              \
+    && apt upgrade -y          \
+    &&  DEBIAN_FRONTEND=noninteractive apt install -y   \
     # Base
-    buildDeps \
     gcc \
     autoconf \
-    build-base  \
- && apk update              \
-    && apk upgrade          \
-    && apk add --no-cache   \
-    # Base
     supervisor              \
     sudo                    \
-    composer                \
+#    composer                \
     git                     \
-    openssh                 \
+#    openssh                 \
     ca-certificates         \
     curl                    \
     wget                    \
     htop                    \
     httpie                  \
     postfix                 \
-    gmp-dev                 \
+    libgmp-dev                \
+    libgmp10                \
     libxml2-dev             \
-    icu-dev                 \
+    libicu-dev                 \
     libzip-dev              \
-    icu                     \
     nano                    \
-    zlib-dev                \
+    zlib1g-dev               \
     procps                  \
     gnupg                   \
-&& wget https://pecl.php.net/get/redis-5.3.2.tgz && pecl install redis-5.3.2.tgz && docker-php-ext-enable redis \
 && docker-php-ext-configure zip \
 && docker-php-ext-install intl gmp shmop opcache bcmath pdo_mysql pcntl soap zip \
 && docker-php-source delete \
-&& apk del --no-cache build-base buildDeps \
+&& wget https://pecl.php.net/get/redis-5.3.2.tgz && pecl install redis-5.3.2.tgz && docker-php-ext-enable redis \
 && cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini  \
 && echo 'memory_limit=1024M' > /usr/local/etc/php/conf.d/memory_limit.ini    \
 && echo 'realpath_cache_size=2048M' > /usr/local/etc/php/conf.d/pathcache.ini         \
@@ -245,7 +259,7 @@ RUN apk  add  --no-cache --update --virtual  \
 && echo "default_socket_timeout=1200" >> /usr/local/etc/php/php.ini \
 && update-ca-certificates \
 && rm -Rf /tmp/pear             \
-&& rm -rf /var/cache/apk/*                                                          \
+&& apt clean -y                                                          \
 && rm -rf /var/cache/fontcache/*                                                    \
 && rm -rf /usr/src/php.tar.xz                                                       \
 && rm -Rf /usr/local/bin/phpdbg 
