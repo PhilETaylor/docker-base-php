@@ -1,6 +1,6 @@
 # docker build . --tag registry.myjoomla.com/base-php
 # docker push registry.myjoomla.com/base-php
-
+# https://github.com/docker-library/php/tree/master/7.4/alpine3.12/cli
 #
 # NOTE: THIS DOCKERFILE IS GENERATED VIA "update.sh"
 #
@@ -231,8 +231,8 @@ RUN apk  add  --no-cache --update --virtual  \
     procps                  \
     gnupg                   \
 && wget https://pecl.php.net/get/redis-5.3.2.tgz && pecl install redis-5.3.2.tgz && docker-php-ext-enable redis \
-&& docker-php-ext-configure zip --with-libzip \
-&& docker-php-ext-install intl gmp shmop opcache bcmath pdo_mysql pcntl soap zip mbstring \
+&& docker-php-ext-configure zip \
+&& docker-php-ext-install intl gmp shmop opcache bcmath pdo_mysql pcntl soap zip \
 && docker-php-source delete \
 && apk del --no-cache build-base buildDeps \
 && cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini  \
@@ -242,7 +242,6 @@ RUN apk  add  --no-cache --update --virtual  \
 && echo '[opcache]' > /usr/local/etc/php/conf.d/opcache.ini                           \
 && echo 'opcache.memory_consumption = 512M' >> /usr/local/etc/php/conf.d/opcache.ini  \
 && echo 'opcache.max_accelerated_files = 1000000' >> /usr/local/etc/php/conf.d/opcache.ini  \
-&& echo 'extension=redis' > /usr/local/etc/php/conf.d/redis.ini \
 && echo "default_socket_timeout=1200" >> /usr/local/etc/php/php.ini \
 && update-ca-certificates \
 && rm -Rf /tmp/pear             \
