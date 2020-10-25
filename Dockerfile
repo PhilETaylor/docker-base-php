@@ -1,10 +1,9 @@
 # docker build . --tag registry.myjoomla.com/base-php
 # docker push registry.myjoomla.com/base-php
 
-FROM php:7.4.11-cli-alpine3.12
+FROM php:7.4.11-cli-alpine3.11
 
 MAINTAINER Phil Taylor <phil@phil-taylor.com>
-
 
 RUN apk  add  --no-cache --update --virtual  \
     # Base
@@ -12,7 +11,6 @@ RUN apk  add  --no-cache --update --virtual  \
     gcc \
     autoconf \
     build-base
-
 
 RUN apk update              \
     && apk upgrade          \
@@ -38,6 +36,7 @@ RUN apk update              \
     procps                  \
     gnupg
 
+RUN wget https://pecl.php.net/get/redis-5.3.2.tgz && pecl install redis-5.3.2.tgz
 RUN docker-php-ext-install intl
 RUN docker-php-ext-install gmp
 RUN docker-php-ext-install shmop
@@ -49,7 +48,7 @@ RUN docker-php-ext-install soap
 RUN docker-php-ext-configure zip
 RUN docker-php-ext-install zip
 RUN docker-php-ext-enable zip
-RUN wget -4 https://pecl.php.net/get/redis-5.3.1.tgz && pecl install redis-5.3.1.tgz
+
 RUN apk del buildDeps
 
 RUN cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini
