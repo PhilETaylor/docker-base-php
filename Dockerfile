@@ -28,8 +28,7 @@ ENV PHP_CFLAGS="-fstack-protector-strong -fpic -fpie -O2 -D_LARGEFILE_SOURCE -D_
 ENV PHP_CPPFLAGS="$PHP_CFLAGS"
 ENV PHP_LDFLAGS="-Wl,-O1 -pie"
 
-COPY docker-php-source /usr/local/bin/
-COPY docker-php-ext-* docker-php-entrypoint /usr/local/bin/
+COPY docker-php-* /usr/local/bin/
 
 # persistent / runtime deps
 RUN apk add --no-cache \
