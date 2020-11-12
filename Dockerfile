@@ -17,35 +17,7 @@ ENV PHPIZE_DEPS \
 		make \
 		pkgconf \
 		re2c bison curl-dev
-
-# persistent / runtime deps
-RUN apk add --no-cache \
-		ca-certificates \
-		curl \
-		git \
-		tar \
-		xz \
-# https://github.com/docker-library/php/issues/494
-		openssl
-
-# ensure www-data user exists
-RUN set -eux; \
-	addgroup -g 82 -S www-data; \
-	adduser -u 82 -D -S -G www-data www-data
-# 82 is the standard uid/gid for "www-data" in Alpine
-# https://git.alpinelinux.org/aports/tree/main/apache2/apache2.pre-install?h=3.9-stable
-# https://git.alpinelinux.org/aports/tree/main/lighttpd/lighttpd.pre-install?h=3.9-stable
-# https://git.alpinelinux.org/aports/tree/main/nginx/nginx.pre-install?h=3.9-stable
-
 ENV PHP_INI_DIR /usr/local/etc/php
-RUN set -eux; \
-	mkdir -p "$PHP_INI_DIR/conf.d"; \
-# allow running as an arbitrary user (https://github.com/docker-library/php/issues/743)
-	[ ! -d /var/www/html ]; \
-	mkdir -p /var/www/html; \
-	chown www-data:www-data /var/www/html; \
-	chmod 777 /var/www/html
-
 # Apply stack smash protection to functions using local buffers and alloca()
 # Make PHP's main executable position-independent (improves ASLR security mechanism, and has no performance impact on x86_64)
 # Enable optimization (-O2)
@@ -59,7 +31,26 @@ ENV PHP_LDFLAGS="-Wl,-O1 -pie"
 COPY docker-php-source /usr/local/bin/
 COPY docker-php-ext-* docker-php-entrypoint /usr/local/bin/
 
-RUN mkdir -p /usr/src/php; \
+# persistent / runtime deps
+RUN apk add --no-cache \
+		ca-certificates \
+		curl \
+		git \
+		tar \
+		xz \
+# https://github.com/docker-library/php/issues/494
+		openssl;\
+		set -eux; \
+	addgroup -g 82 -S www-data; \
+	adduser -u 82 -D -S -G www-data www-data;\
+	set -eux; \
+	mkdir -p "$PHP_INI_DIR/conf.d"; \
+# allow running as an arbitrary user (https://github.com/docker-library/php/issues/743)
+	[ ! -d /var/www/html ]; \
+	mkdir -p /var/www/html; \
+	chown www-data:www-data /var/www/html; \
+	chmod 777 /var/www/html; \
+	mkdir -p /usr/src/php; \
     git clone https://github.com/php/php-src.git /usr/src/php; \
     cd /usr/src/php; \
     git checkout PHP-8.0 ; \
