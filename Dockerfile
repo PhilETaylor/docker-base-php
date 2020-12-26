@@ -1,5 +1,5 @@
-# docker build . --tag registry.digitalocean.com/mysites/base-php:php8
-# docker push registry.digitalocean.com/mysites/base-php
+# docker build . --tag philetaylor/base-php
+# docker push philetaylor/base-php
 # https://github.com/docker-library/php/tree/master/7.4/alpine3.12/cli
 
 FROM alpine:latest
