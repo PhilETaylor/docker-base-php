@@ -1,7 +1,7 @@
-# docker build . --tag registry.myjoomla.com/base-php
-# docker push registry.myjoomla.com/base-php
+# docker build . --tag philetaylor/base-php:latest
+# docker push philetaylor/base-php:latest
 
-FROM php:7.4.11-cli-alpine3.11
+FROM php:8.0.7-cli-alpine3.13
 
 MAINTAINER Phil Taylor <phil@phil-taylor.com>
 
@@ -36,7 +36,7 @@ RUN apk update              \
     procps                  \
     gnupg
 
-RUN wget https://pecl.php.net/get/redis-5.3.2.tgz && pecl install redis-5.3.2.tgz
+RUN wget https://pecl.php.net/get/redis-5.3.4.tgz && pecl install redis-5.3.4.tgz
 RUN docker-php-ext-install intl
 RUN docker-php-ext-install gmp
 RUN docker-php-ext-install shmop
