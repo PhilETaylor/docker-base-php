@@ -52,7 +52,7 @@ RUN apk add --no-cache \
 	mkdir -p /usr/src/php; \
     git clone https://github.com/php/php-src.git /usr/src/php; \
     cd /usr/src/php; \
-    git checkout PHP-8.0 ; \
+    git checkout PHP-8.0.7 ; \
     rm -Rf /usr/src/php/.git; \
     set -eux; \
 	apk add --no-cache --virtual .build-deps \
