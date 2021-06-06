@@ -176,7 +176,7 @@ RUN apk add --no-cache \
         zlib-dev                \
         procps                  \
         gnupg                   \
-    && wget https://pecl.php.net/get/redis-5.3.2.tgz && pecl install redis-5.3.2.tgz && docker-php-ext-enable redis \
+    && wget https://pecl.php.net/get/redis-5.3.3.tgz && pecl install redis-5.3.3.tgz && docker-php-ext-enable redis \
     && docker-php-ext-configure zip \
     && docker-php-ext-install intl gmp shmop opcache bcmath pdo_mysql pcntl soap zip \
     && docker-php-source delete \
