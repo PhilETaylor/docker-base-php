@@ -1,11 +1,11 @@
 # docker build . --tag philetaylor/base-php:latest
 # docker push philetaylor/base-php:latest
 
-FROM php:8.0.7-cli-alpine3.13
+FROM php:alpine3.13
 
 MAINTAINER Phil Taylor <phil@phil-taylor.com>
 
-RUN apk  add  --no-cache --update --virtual  \
+RUN apk add  --no-cache --update --virtual  \
     # Base
     buildDeps \
     gcc \
@@ -34,32 +34,18 @@ RUN apk update              \
     nano                    \
     zlib-dev                \
     procps                  \
-    gnupg
-
-RUN wget https://pecl.php.net/get/redis-5.3.4.tgz && pecl install redis-5.3.4.tgz
-RUN docker-php-ext-install intl
-RUN docker-php-ext-install gmp
-RUN docker-php-ext-install shmop
-RUN docker-php-ext-install opcache
-RUN docker-php-ext-install bcmath
-RUN docker-php-ext-install pdo_mysql
-RUN docker-php-ext-install pcntl
-RUN docker-php-ext-install soap
-RUN docker-php-ext-configure zip
-RUN docker-php-ext-install zip
-RUN docker-php-ext-enable zip
-
-RUN apk del buildDeps
-
-RUN cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini
-
-# PHP-FPM
-RUN echo 'memory_limit=1024M' > /usr/local/etc/php/conf.d/memory_limit.ini    \
-# PHP CLI
+    gnupg \
+    && apk upgrade          \
+    && wget https://pecl.php.net/get/redis-5.3.4.tgz && pecl install redis-5.3.4.tgz \
+    && docker-php-ext-install intl gmp shmop opcache bcmath pdo_mysql pcntl soap \
+    && docker-php-ext-configure zip && docker-php-ext-install zip && docker-php-ext-enable zip \
+    && apk del buildDeps \
+    && cp /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini \
+    && echo 'memory_limit=1024M' > /usr/local/etc/php/conf.d/memory_limit.ini    \
     && echo 'realpath_cache_size=2048M' > /usr/local/etc/php/conf.d/pathcache.ini         \
     && echo 'realpath_cache_ttl=7200' >> /usr/local/etc/php/conf.d/pathcache.ini          \
     && echo '[opcache]' > /usr/local/etc/php/conf.d/opcache.ini                           \
     && echo 'opcache.memory_consumption = 512M' >> /usr/local/etc/php/conf.d/opcache.ini  \
     && echo 'opcache.max_accelerated_files = 1000000' >> /usr/local/etc/php/conf.d/opcache.ini  \
-# Others
-    && update-ca-certificates
+    && update-ca-certificates \
+    && rm -rf /var/cache/apk/*
