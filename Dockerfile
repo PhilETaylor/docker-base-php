@@ -1,4 +1,4 @@
-# docker build . --tag philetaylor/base-php:latest
+# docker buildx build . --platform linux/amd64,linux/arm64 --no-cache --push --tag philetaylor/base-php:latest
 # docker push philetaylor/base-php:latest
 
 FROM php:alpine3.13
