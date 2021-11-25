@@ -1,7 +1,7 @@
 # docker buildx build . --platform linux/amd64,linux/arm64 --no-cache --push --tag philetaylor/base-php:latest
 # docker push philetaylor/base-php:latest
 
-FROM php:alpine3.13
+FROM php:alpine3.14
 
 MAINTAINER Phil Taylor <phil@phil-taylor.com>
 
@@ -48,4 +48,5 @@ RUN apk update              \
     && echo 'opcache.memory_consumption = 512M' >> /usr/local/etc/php/conf.d/opcache.ini  \
     && echo 'opcache.max_accelerated_files = 1000000' >> /usr/local/etc/php/conf.d/opcache.ini  \
     && update-ca-certificates \
-    && rm -rf /var/cache/apk/*
+    && rm -rf /var/cache/apk/*\
+    && rm -Rf /usr/src/php
