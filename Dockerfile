@@ -36,7 +36,7 @@ RUN apk update              \
     procps                  \
     gnupg \
     && apk upgrade          \
-    && wget https://pecl.php.net/get/redis-5.3.6.tgz && pecl install redis-5.3.6.tgz \
+    && wget https://pecl.php.net/get/redis-5.3.7.tgz && pecl install redis-5.3.7.tgz \
     && echo "extension=redis.so" > /usr/local/etc/php/conf.d/docker-php-ext-redis.ini \
     && docker-php-ext-install intl gmp shmop opcache bcmath pdo_mysql pcntl soap \
     && docker-php-ext-configure zip && docker-php-ext-install zip && docker-php-ext-enable zip \
