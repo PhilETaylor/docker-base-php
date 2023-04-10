@@ -1,7 +1,7 @@
 # docker buildx build . --platform linux/amd64,linux/arm64 --no-cache --push --tag philetaylor/base-php:latest
 # docker push philetaylor/base-php:latest
 
-FROM php:alpine3.15
+FROM php:8.2.4-alpine3.16
 
 MAINTAINER Phil Taylor <phil@phil-taylor.com>
 
